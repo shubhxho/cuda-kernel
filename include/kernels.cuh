@@ -6,6 +6,15 @@
 #include "config.hpp"
 
 namespace decode {
+__device__ __forceinline__ uint4 load128(const half* p) {
+    uint4 v;
+    asm volatile("ld.global.v4.u32 {%0,%1,%2,%3}, [%4];" : "=r"(v.x),"=r"(v.y),"=r"(v.z),"=r"(v.w) : "l"(p));
+    return v;
+}
+__device__ __forceinline__ float2 unpack_pair(unsigned int bits) {
+    return __half22float2(__halves2half2(__ushort_as_half(static_cast<unsigned short>(bits)),
+                                     __ushort_as_half(static_cast<unsigned short>(bits>>16))));
+}
 __device__ __forceinline__ float device_silu(float x) {
     if(x>=0) return x/(1.0f+expf(-x));
     float e=expf(x); return x*e/(1.0f+e);
