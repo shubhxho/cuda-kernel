@@ -2,6 +2,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <stdexcept>
+#include "config.hpp"
 
 namespace decode {
 // Each row gets WPR warps. Half2 loads coalesce; odd strides use scalar loads.
