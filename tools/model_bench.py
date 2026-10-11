@@ -160,7 +160,7 @@ def main():
                         "wall_speedup": speedup})
         print(f"{prompt[:35]}: stock {stats['baseline']['wall_median_ms']:.3f} ms/token, "
               f"custom {stats['custom']['wall_median_ms']:.3f} ms/token, {speedup:.3f}x")
-    sources = [ROOT / "include/kernels.cuh", ROOT / "src/torch_extension.cu", Path(__file__)]
+    sources = [ROOT / "include/config.hpp", ROOT / "include/kernels.cuh", ROOT / "src/torch_extension.cu", Path(__file__)]
     result = {"schema_version": 1, "kind": "pretrained-model-decode", "model": args.model,
               "requested_revision": args.revision, "resolved_revision": resolved_revision,
               "gpu": torch.cuda.get_device_name(), "torch": torch.__version__,
