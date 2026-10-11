@@ -147,7 +147,7 @@ struct Workload {
         }
         ck(cudaPeekAtLastError());
     }
-    void custom(Context& c,bool ffn,int wpr) {
+    void custom(Context& c,bool ffn,int wpr,int down_config=-1) {
         if(ffn) {
             launch<true,false>(wpr,wg.p,wu.p,x.p,bg.p,bu.p,nullptr,nullptr,h.p,intermediate,hidden,c.stream);
             launch<false,true>(wpr,wd.p,nullptr,h.p,bd.p,nullptr,x.p,y.p,nullptr,hidden,intermediate,c.stream);
