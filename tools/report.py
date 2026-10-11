@@ -20,7 +20,12 @@ def validate(report):
             raise ValueError(f"missing or invalid {key}")
     if report["samples"] < 3:
         raise ValueError("insufficient holdout samples")
+    seen = set()
     for case in report["cases"]:
+        identity = (case.get("shape"), case.get("operation"))
+        if identity in seen:
+            raise ValueError("duplicate benchmark case")
+        seen.add(identity)
         for key in ("hidden", "intermediate"):
             if not positive(case.get(key)) or not isinstance(case[key], int):
                 raise ValueError("invalid workload dimensions")
