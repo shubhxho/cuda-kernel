@@ -21,6 +21,9 @@ def validate(report):
     if report["samples"] < 3:
         raise ValueError("insufficient holdout samples")
     for case in report["cases"]:
+        for key in ("hidden", "intermediate"):
+            if not positive(case.get(key)) or not isinstance(case[key], int):
+                raise ValueError("invalid workload dimensions")
         for side in ("custom", "baseline"):
             c = case[side]
             values = c["samples_us"]

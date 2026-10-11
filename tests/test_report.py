@@ -15,7 +15,7 @@ def fixture():
     return {"schema_version": 1, "timing": "cuda-graph-events", "gpu": "test-only",
             "compute_capability": "8.0", "data": "synthetic-fp16-model-shapes",
             "driver_version": 12080, "runtime_version": 12080, "cublas_version": 120800,
-            "repeats": 100, "samples": 3, "cases": [{"shape": "fixture", "operation": "projection",
+            "repeats": 100, "samples": 3, "cases": [{"shape": "fixture", "operation": "projection", "hidden": 64, "intermediate": 128,
             "custom": side("custom", [4, 5, 6]), "baseline": side("cublas", [9, 10, 11]), "speedup": 2}]}
 
 
