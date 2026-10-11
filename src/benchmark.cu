@@ -39,6 +39,7 @@ struct Context {
         bk(cublasCreate(&blas)); bk(cublasSetStream(blas,stream));
         bk(cublasSetMathMode(blas,CUBLAS_DEFAULT_MATH));
     }
+    Context(const Context&)=delete;Context& operator=(const Context&)=delete;
     ~Context() { if(blas) cublasDestroy(blas); if(stream) cudaStreamDestroy(stream); }
 };
 struct Graph {
