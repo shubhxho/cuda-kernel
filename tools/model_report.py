@@ -21,6 +21,9 @@ def render(data):
             raise ValueError("model correctness failed")
         if not math.isfinite(c["max_logit_scaled_error"]) or not 0 <= c["max_logit_scaled_error"] <= 1:
             raise ValueError("logit tolerance failed")
+        for v in (c["tokens"], data["patched_layers"]):
+            if isinstance(v, bool) or not isinstance(v, int) or v <= 0:
+                raise ValueError("invalid model workload counts")
         expected_calls = c["tokens"] * data["patched_layers"]
         for side in ("custom", "baseline"):
             samples = c[side]["samples"]
