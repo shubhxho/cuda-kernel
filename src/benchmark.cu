@@ -264,7 +264,7 @@ int main(int argc,char** argv) {
             else if(arg=="--intermediate") intermediate=integer(value);
             else throw std::invalid_argument("unknown option: "+arg);
         }
-        if(samples<3) throw std::invalid_argument("at least 3 holdout samples required");
+        if(samples<3 || samples>101 || repeats>10000) throw std::invalid_argument("samples must be 3..101 and repeats 1..10000");
         auto cases=shapes(suite);
         if(!fixture.empty()) {
             if(!hidden || !intermediate) throw std::invalid_argument("fixture needs --hidden and --intermediate");
