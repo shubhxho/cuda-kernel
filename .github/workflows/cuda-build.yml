@@ -1,0 +1,15 @@
+name: CUDA compile
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    container: nvidia/cuda:12.6.3-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: apt-get update && apt-get install -y python3-pip build-essential ninja-build
+      - run: python3 -m pip install cmake==3.31.6
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CUDA_ARCHITECTURES=75;80;86;89;90'
+      - run: cmake --build build -j2
+      - run: ./build/host_tests
