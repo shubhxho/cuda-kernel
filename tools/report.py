@@ -16,7 +16,7 @@ def validate(report):
     if not report.get("gpu") or not report.get("cases"):
         raise ValueError("missing GPU identity or workload cases")
     for key in ("driver_version", "runtime_version", "cublas_version", "repeats", "samples"):
-        if not positive(report.get(key)):
+        if not positive(report.get(key)) or not isinstance(report[key], int):
             raise ValueError(f"missing or invalid {key}")
     if report["samples"] < 3:
         raise ValueError("insufficient holdout samples")
