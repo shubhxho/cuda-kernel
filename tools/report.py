@@ -13,6 +13,8 @@ def positive(value):
 def validate(report):
     if report.get("schema_version") != 1 or report.get("timing") != "cuda-graph-events":
         raise ValueError("unsupported benchmark schema or timing protocol")
+    if report.get("data") not in ("synthetic-fp16-model-shapes", "captured-model-fixture"):
+        raise ValueError("unknown data provenance")
     if not report.get("gpu") or not report.get("cases"):
         raise ValueError("missing GPU identity or workload cases")
     for key in ("driver_version", "runtime_version", "cublas_version", "repeats", "samples"):
