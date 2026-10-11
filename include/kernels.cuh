@@ -1,6 +1,7 @@
 #pragma once
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
+#include <stdexcept>
 
 namespace decode {
 // Each row gets WPR warps. Half2 loads coalesce; odd strides use scalar loads.
@@ -79,7 +80,7 @@ inline void launch(int wpr, const half* w, const half* u, const half* x,
                    const half* bias, const half* ubias, const half* residual,
                    float* y, half* h, int rows, int cols, cudaStream_t stream) {
     #define DISPATCH(N) case N: project<N,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND><<<(rows+3)/4,128*N,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break
-    switch (wpr) { DISPATCH(1); DISPATCH(2); DISPATCH(4); DISPATCH(8); }
+    switch (wpr) { DISPATCH(1); DISPATCH(2); DISPATCH(4); DISPATCH(8); default: throw std::invalid_argument("unknown kernel configuration"); }
     #undef DISPATCH
 }
 __global__ void gate_epilogue(const float* a, const float* b, const half* bias,
