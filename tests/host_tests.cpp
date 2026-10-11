@@ -18,6 +18,7 @@ int main() {
     require(std::isfinite(silu(-1000)) && silu(-1000)==0);
     require(silu(1000)==1000);
     require(!compare({INFINITY}, {INFINITY}).passed);
+    { bool failed=false;try { compare({1},{1},.003,-.01); } catch(const std::invalid_argument&) { failed=true; } require(failed); }
     int rejected = 0;
     try { matvec({1}, {1,2}, 1); } catch (const std::invalid_argument&) { ++rejected; }
     try { shapes("typo"); } catch (const std::invalid_argument&) { ++rejected; }
