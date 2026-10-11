@@ -68,7 +68,7 @@ struct Event {
 std::vector<double> timings(Context& c, Graph& g, int repeats, int samples) {
     for(int i=0;i<20;++i) g.run(c);
     ck(cudaStreamSynchronize(c.stream));
-    Event a,b; std::vector<double> out;
+    Event a,b; std::vector<double> out;out.reserve(samples);
     for(int s=0;s<samples;++s) {
         ck(cudaEventRecord(a.event,c.stream));
         for(int i=0;i<repeats;++i) g.run(c);
