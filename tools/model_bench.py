@@ -114,7 +114,7 @@ def main():
             torch.testing.assert_close(y, expected, atol=0.01, rtol=0.02)
             graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(graph):
-                ext.swiglu(tx, mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach(), wpr)
+                ext.swiglu_out(tx, *tune_weights, tune_h, tune_y, wpr, down_id)
             for _ in range(20):
                 graph.replay()
             samples = []
