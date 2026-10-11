@@ -1,4 +1,4 @@
-.PHONY: host-test build gpu-test bench model report
+.PHONY: host-test build gpu-test bench model report gpu-validate sweep
 host-test:
 	cmake -S . -B build-host -DENABLE_CUDA=OFF
 	cmake --build build-host -j2
@@ -18,3 +18,8 @@ model:
 report:
 	python3 tools/report.py results/kernels.json --output results/kernels.md
 	python3 tools/model_report.py results/model.json --output results/model.md
+
+gpu-validate:
+	python3 tools/gpu_validate.py
+sweep: gpu-test
+	python3 tools/sweep.py --model

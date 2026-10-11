@@ -23,7 +23,7 @@ The model runner loads **TinyLlama-1.1B-Chat-v1.0**, replaces the decode MLP in 
 
 Single-token decoding turns the projection into a matrix-vector product. Most of the work is reading weights. A general matrix-multiply kernel has less opportunity to reuse those weights than it does for a large batch.
 
-The custom kernels assign one, two, four, or eight warps to each output row. Adjacent lanes read adjacent FP16 values through `half2`; the odd-dimension path handles unaligned rows with scalar loads. Warp shuffles reduce the dot products, with a small shared-memory reduction when several warps share a row.
+The custom kernels assign one, two, four, or eight warps to each output row. There are ten registered configurations, including aligned 128-bit PTX loads with four independent FP32 accumulation chains and variable rows per block. Misaligned or non-multiple-of-eight inputs use a guarded half2 or scalar path. Adjacent lanes read adjacent FP16 values through `half2`; the odd-dimension path handles unaligned rows with scalar loads. Warp shuffles reduce the dot products, with a small shared-memory reduction when several warps share a row.
 
 The gate kernel reads the input for both projections and writes the activated product directly. It avoids materializing the two projection outputs. The down kernel can add bias and the residual before writing the result. This saves launches and intermediate traffic. Whether that beats the library on a particular GPU is a measurement, not a guarantee.
 
@@ -42,9 +42,9 @@ Current results:
 
 The shape suite uses seeded synthetic tensors. Those rows exercise model-sized operations; they are not pretrained-model results. The separate TinyLlama runner uses downloaded pretrained weights and actual token decoding, records the resolved model revision, and checks the entire model output.
 
-Kernel timing uses warmed CUDA Graphs and CUDA events for both implementations. It tunes four custom configurations and two cuBLAS algorithm choices, then compares the selected candidates using fresh, interleaved samples. Correctness is checked against an independent CPU reference using double dot-product accumulation. Odd dimensions, tiny inputs, and partial output blocks are covered by the GPU correctness suite.
+Kernel timing uses warmed CUDA Graphs and CUDA events for both implementations. It tunes ten projection configurations, 100 independent gate/down pairs for a complete layer, and two cuBLAS algorithm choices, then compares the selected candidates using fresh, interleaved samples. Correctness is checked against an independent CPU reference using double dot-product accumulation. Odd dimensions, tiny inputs, and partial output blocks are covered by the GPU correctness suite.
 
-The model benchmark checks every decode MLP took the custom path, compares logits, and requires identical greedy tokens before reporting timings. It measures GPU event time and wall time per token, excluding prefill and setup. Wall time includes Python dispatch and cache handling. Both paths use SDPA attention and the same sequence of growing cache lengths. The kernels are tuned on an independent random first-layer input, not on the timed prompts.
+The model benchmark checks every decode MLP took the custom path, compares logits, and requires identical greedy tokens before reporting timings. It measures GPU event time and wall time per token, excluding prefill and setup. Wall time includes Python dispatch and cache handling. Both paths use SDPA attention and the same sequence of growing cache lengths. The kernels are tuned on an independent random first-layer input, not on the timed prompts. Decode layers cache detached weights and reuse per-layer scratch and output tensors through an allocation-free binding. These workspaces belong to this single-stream runner; concurrent requests need separate workspaces. Output buffers are overwritten by the next call, so callers must copy outputs they need to retain.
 
 A report calls a result a **separated win** only when the median improves by at least 5% and the slowest custom sample is faster than the fastest baseline sample. This is a conservative noise check, not a statistical confidence interval. Raw samples and numerical errors are retained. Slower and inconclusive results stay in the report.
 
@@ -139,6 +139,18 @@ All tensors for the chosen layer must be in the supplied shard. Convert BF16 wei
 - [`src/torch_extension.cu`](src/torch_extension.cu): checked PyTorch binding on the current CUDA stream.
 - [`tools/model_bench.py`](tools/model_bench.py): full-model substitution, correctness gates, and latency measurements.
 - [`tools/report.py`](tools/report.py) and [`tools/model_report.py`](tools/model_report.py): evidence validation and readable reports.
+
+For a broader sweep and device validation:
+
+```sh
+python tools/gpu_validate.py
+python tools/sweep.py --model
+python tools/report.py results/kernels.json --require-all-wins
+compute-sanitizer --tool racecheck ./build/decode_bench --suite correctness --repeats 5 --samples 3
+compute-sanitizer --tool synccheck ./build/decode_bench --suite correctness --repeats 5 --samples 3
+```
+
+The all-wins gate fails on any slower or inconclusive case. It is a goal check; no current artifact passes it because GPU execution remains unavailable. Tail latency in the kernel report is p95 of replay-batch averages, not a per-request SLA. Fifteen new correctness shapes cover scalar, half2, vector8, warp, loop, and row-group boundaries. The optimization series is listed in [COMMIT_SERIES.md](COMMIT_SERIES.md); individual commit bodies explain the change and validation limits.
 
 Public CI checks host contracts and CUDA compilation. It has no GPU, so a green compile job is not a GPU correctness or performance result. On a CUDA machine, run `compute-sanitizer --tool memcheck ./build/decode_bench --suite correctness --repeats 5 --samples 3` before relying on the kernels in an application.
 
