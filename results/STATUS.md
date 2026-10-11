@@ -24,3 +24,9 @@ Two CTest invocations were killed by the host; the direct executable passed, and
 The [host run](https://github.com/shubhxho/cuda-kernel/actions/runs/38179607726) and [CUDA compile run](https://github.com/shubhxho/cuda-kernel/actions/runs/38179607611) both have no executed steps. Their check annotations state: `The job was not started because your account is locked due to a billing issue.` No remote compilation or test execution is claimed.
 
 No GPU speedup is claimed. Test-only timing fixtures in the report unit tests are artificial data used to test the reporting logic. They are not benchmark results.
+
+## Optimization series
+
+The follow-up adds 128-bit PTX load variants, independent gate/down autotuning, stabilized activation, allocation-free model decode buffers, alias guards, wider correctness coverage, a multi-seed sweep, and a complete-suite win gate.
+
+Every commit was checked for non-empty changes, Python syntax, and whitespace errors. Host contract changes were compiled and executed. Python report regressions were executed. These checks do not compile or execute CUDA. The series does not establish lower GPU latency or a library win; CUDA compilation, GPU correctness, sanitizers, and pretrained-model execution still require an accessible NVIDIA environment.
