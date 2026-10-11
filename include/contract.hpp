@@ -10,7 +10,7 @@ namespace decode {
 struct Shape { std::string name; int hidden; int intermediate; };
 inline std::vector<Shape> shapes(const std::string& suite) {
     if (suite == "correctness") return {{"tiny", 1, 1}, {"odd", 37, 65},
-        {"tail", 129, 257}, {"aligned", 512, 1024}, {"one-to-tail", 1, 9}, {"half2-min", 2, 3}, {"vector8-min", 8, 8}, {"below-vector8", 7, 9}};
+        {"tail", 129, 257}, {"aligned", 512, 1024}, {"one-to-tail", 1, 9}, {"half2-min", 2, 3}, {"vector8-min", 8, 8}, {"below-vector8", 7, 9}, {"above-vector8", 9, 7}};
     if (suite == "decode") return {{"decode-1b-shape", 2048, 8192},
         {"decode-7b-shape", 4096, 11008}, {"decode-8b-shape", 4096, 14336}};
     if (suite == "smoke") return {{"smoke", 512, 1024}};
