@@ -28,6 +28,10 @@ class ReportTest(unittest.TestCase):
         data=fixture();data["cases"].append(copy.deepcopy(data["cases"][0]))
         with self.assertRaises(ValueError): report.validate(data)
 
+    def test_missing_dimensions(self):
+        data=fixture();del data["cases"][0]["hidden"]
+        with self.assertRaises(ValueError): report.validate(data)
+
     def test_valid(self):
         self.assertIn("separated win", report.render(fixture()))
 
