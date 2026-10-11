@@ -1,6 +1,7 @@
 #pragma once
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
+#include <cstdint>
 #include <stdexcept>
 #include "config.hpp"
 
@@ -26,7 +27,7 @@ __global__ void project(const half* __restrict__ w, const half* __restrict__ u,
     float a = 0, b = 0;
     if (row < rows) {
         size_t offset = size_t(row)*cols;
-        if ((cols & 1) == 0) {
+        if ((cols & 1) == 0 && (reinterpret_cast<uintptr_t>(w+offset)%4)==0 && (reinterpret_cast<uintptr_t>(x)%4)==0 && (!GATED || reinterpret_cast<uintptr_t>(u+offset)%4==0)) {
             auto ww = reinterpret_cast<const half2*>(w + offset);
             auto xx = reinterpret_cast<const half2*>(x);
             for (int c = t; c < cols/2; c += 32*WPR) {
