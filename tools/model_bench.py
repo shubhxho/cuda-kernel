@@ -57,7 +57,8 @@ def main():
     calls = 0
 
     for mlp, original in zip(layer_modules, originals):
-        def forward(x, mlp=mlp, original=original):
+        weights = (mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach())
+        def forward(x, weights=weights, mlp=mlp, original=original):
             nonlocal calls
             if enabled and x.numel() == x.shape[-1]:
                 calls += 1
