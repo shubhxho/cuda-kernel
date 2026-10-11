@@ -13,7 +13,7 @@ __device__ __forceinline__ float device_silu(float x) {
 // Each row gets WPR warps. Half2 loads coalesce; odd strides use scalar loads.
 // All lanes participate in reductions, including rows outside the output tail.
 template<int WPR, bool GATED, bool RESIDUAL, bool HALF_OUT = false, bool MODEL_ROUND = false, int ROWS = 4, int PACK = 2>
-__global__ void project(const half* __restrict__ w, const half* __restrict__ u,
+__global__ __launch_bounds__(32*WPR*ROWS) void project(const half* __restrict__ w, const half* __restrict__ u,
                         const half* __restrict__ x, const half* __restrict__ bias,
                         const half* __restrict__ ubias, const half* __restrict__ residual,
                         float* __restrict__ y, half* __restrict__ h, int rows, int cols) {
