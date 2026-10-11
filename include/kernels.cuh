@@ -70,9 +70,9 @@ __global__ void project(const half* __restrict__ w, const half* __restrict__ u,
             if constexpr (MODEL_ROUND) {
                 // Match eager FP16 Linear -> SiLU -> multiply rounding boundaries.
                 a = __half2float(__float2half_rn(a)); b = __half2float(__float2half_rn(b));
-                float activated = __half2float(__float2half_rn(a / (1.0f + expf(-a))));
+                float activated = __half2float(__float2half_rn(device_silu(a)));
                 h[row] = __float2half_rn(activated*b);
-            } else h[row] = __float2half_rn((a / (1.0f + expf(-a))) * b);
+            } else h[row] = __float2half_rn((device_silu(a)) * b);
         } else {
             if constexpr (RESIDUAL) a += __half2float(residual[row]);
             if constexpr (HALF_OUT) h[row] = __float2half_rn(a);
