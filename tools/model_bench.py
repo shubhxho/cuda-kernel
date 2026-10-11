@@ -178,7 +178,8 @@ def main():
               "timing": "eager-decode-gpu-events-and-wall", "prefill_included": False,
               "patched_layers": len(layer_modules), "wpr": selected_wpr, "down_config": selected_down, "tuning": tuning,
               "source_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
-              "cases": records}
+              "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
+              "peak_reserved_bytes": torch.cuda.max_memory_reserved(), "cases": records}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
 
