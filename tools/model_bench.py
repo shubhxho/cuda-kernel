@@ -142,6 +142,9 @@ def main():
             raise RuntimeError("greedy generation differs; no performance claim allowed")
         errors = (custom["logits"].float()-baseline["logits"].float()).abs()
         scaled_error = errors / (0.1 + 0.02 * baseline["logits"].float().abs())
+        for warm in (False, True):
+            enabled = warm
+            decode(ids)
         collected = {"baseline": [], "custom": []}
         for sample in range(args.samples):
             for side in (("baseline", "custom") if sample % 2 == 0 else ("custom", "baseline")):
