@@ -69,6 +69,13 @@ def render(report):
             "slower" if c["speedup"] < 1 else "inconclusive")
         lines.append(f"| {c['shape']} | {c['operation']} | {a['median_us']:.3f} | "
                      f"{b['median_us']:.3f} | {c['speedup']:.3f}× | {evidence} |")
+    lines += ["", "Tail latency (nearest-rank p95 of replay-batch averages):", "",
+              "| Workload | Operation | Custom p95 µs | Baseline p95 µs |", "|---|---|---:|---:|"]
+    for c in report["cases"]:
+        def p95(side):
+            xs = sorted(c[side]["samples_us"])
+            return xs[math.ceil(0.95 * len(xs)) - 1]
+        lines.append(f"| {c['shape']} | {c['operation']} | {p95('custom'):.3f} | {p95('baseline'):.3f} |")
     lines += ["", "A separated win requires at least 5% median speedup and every custom sample below every baseline sample.",
               "This compares the selected cuBLAS GemmEx algorithms. It does not establish a win against cuBLASLt, cuDNN,",
               "TensorRT-LLM, a complete model, or other GPUs. Synthetic shapes are not pretrained-model evidence."]
