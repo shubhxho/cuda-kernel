@@ -24,6 +24,10 @@ class ReportTest(unittest.TestCase):
         data=fixture();data["cases"][0]["custom"]["max_scaled_error"]=True
         with self.assertRaises(ValueError): report.validate(data)
 
+    def test_duplicate_cases(self):
+        data=fixture();data["cases"].append(copy.deepcopy(data["cases"][0]))
+        with self.assertRaises(ValueError): report.validate(data)
+
     def test_valid(self):
         self.assertIn("separated win", report.render(fixture()))
 
