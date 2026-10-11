@@ -131,6 +131,8 @@ def main():
     records = []
     for prompt in PROMPTS:
         ids = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
+        if ids.numel() + args.tokens > model.config.max_position_embeddings:
+            raise ValueError("prompt plus decode tokens exceeds model context")
         enabled = False
         baseline = decode(ids, collect=True)
         enabled = True
