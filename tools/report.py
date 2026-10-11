@@ -30,7 +30,7 @@ def validate(report):
                 raise ValueError("invalid GPU event timings")
             for key in ("max_abs_error", "max_scaled_error"):
                 v = c.get(key)
-                if not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
                     raise ValueError("invalid correctness evidence")
             if c["max_scaled_error"] > 1:
                 raise ValueError("numeric tolerance failed")
