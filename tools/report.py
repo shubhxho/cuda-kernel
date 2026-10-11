@@ -95,6 +95,11 @@ def main():
         args.output.write_text(text)
     else:
         print(text, end="")
+    if args.require_all_wins and not all(
+        c["speedup"] >= 1.05 and max(c["custom"]["samples_us"]) < min(c["baseline"]["samples_us"])
+        for c in report["cases"]
+    ):
+        raise SystemExit("Not every benchmark has a separated win")
     if args.require_win and not any(
         c["speedup"] >= 1.05 and max(c["custom"]["samples_us"]) < min(c["baseline"]["samples_us"])
         for c in report["cases"]
