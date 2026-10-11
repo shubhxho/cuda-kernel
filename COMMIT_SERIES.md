@@ -106,3 +106,12 @@ This series contains 100 non-empty commits. Each has a problem/change explanatio
 | 100 | this commit | Audit the final source tree and record the complete optimization series |
 
 GPU execution remains required before making a speedup claim. No empty commits or repeated copies of the same change were used.
+
+Four follow-ups bring this delivery to 104 new commits:
+
+| # | Commit | Change |
+|---:|---|---|
+| 101 | `4daf9ae` | Generate dispatch and metadata from one specialization list |
+| 102 | `6b85fe2` | Audit 1,520 launch and address-coverage combinations |
+| 103 | `47d34a2` | Validate the GPU binding and preserve successful partial artifacts |
+| 104 | this commit | Record final host validation and the repeated GPU execution blocker |

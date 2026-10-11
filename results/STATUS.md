@@ -30,3 +30,7 @@ No GPU speedup is claimed. Test-only timing fixtures in the report unit tests ar
 The follow-up adds 128-bit PTX load variants, independent gate/down autotuning, stabilized activation, allocation-free model decode buffers, alias guards, wider correctness coverage, a multi-seed sweep, and a complete-suite win gate.
 
 Every commit was checked for non-empty changes, Python syntax, and whitespace errors. Host contract changes were compiled and executed. Python report regressions were executed. These checks do not compile or execute CUDA. The series does not establish lower GPU latency or a library win; CUDA compilation, GPU correctness, sanitizers, and pretrained-model execution still require an accessible NVIDIA environment.
+
+Final-workspace validation after the series: both CTests passed, all 14 Python report tests passed, and the portable mapping audit passed 1,520 cases. The Modal 1.5.0 app definition imported successfully. A fresh GPU run again failed before execution with `Could not connect to the Modal server`; the active profile was also reported as `Unknown (profile misconfigured)`.
+
+Three follow-up commits unify the dispatch registry, add the mapping audit, and retain successful partial artifacts when a later GPU gate fails. A fourth follow-up records these observations. The 100-commit series and these four follow-ups total 104 new commits.
