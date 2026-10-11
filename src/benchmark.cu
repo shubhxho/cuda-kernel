@@ -183,6 +183,8 @@ std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int re
         fn();c.error=w.validate(ctx,ffn);
         if(!c.error.passed) throw std::runtime_error(c.name+" correctness failed for "+shape.name);
         c.graph=std::make_unique<Graph>(ctx,fn);
+        c.graph->run(ctx);c.error=w.validate(ctx,ffn);
+        if(!c.error.passed) throw std::runtime_error("captured candidate correctness failed: "+c.name);
         c.tuning=timings(ctx,*c.graph,repeats,3);baseline.push_back(std::move(c));
     }
     for(auto gate_config:configs) for(auto down:configs) {
@@ -193,6 +195,8 @@ std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int re
         fn();c.error=w.validate(ctx,ffn);
         if(!c.error.passed) throw std::runtime_error(c.name+" correctness failed for "+shape.name);
         c.graph=std::make_unique<Graph>(ctx,fn);
+        c.graph->run(ctx);c.error=w.validate(ctx,ffn);
+        if(!c.error.passed) throw std::runtime_error("captured candidate correctness failed: "+c.name);
         c.tuning=timings(ctx,*c.graph,repeats,3);custom.push_back(std::move(c));
     }
     auto best=[](std::vector<Candidate>& cs)->Candidate& {
