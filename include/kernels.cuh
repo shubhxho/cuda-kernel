@@ -121,9 +121,15 @@ inline void launch(int wpr, const half* w, const half* u, const half* x,
     else if constexpr (HALF_OUT) { if(!h) throw std::invalid_argument("missing half output"); }
     else { if(!y) throw std::invalid_argument("missing float output"); }
     if constexpr (RESIDUAL) { if(!residual) throw std::invalid_argument("missing residual"); }
-    #define DISPATCH(N) case N: project<N,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND><<<(rows+3)/4,128*N,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break
-    switch (wpr) { DISPATCH(1); DISPATCH(2); DISPATCH(4); DISPATCH(8); case 16: project<1,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,4,8><<<(rows+3)/4,128,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; case 17: project<2,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,4,8><<<(rows+3)/4,256,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; case 18: project<4,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,2,8><<<(rows+1)/2,256,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; case 19: project<1,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,8,8><<<(rows+7)/8,256,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; case 20: project<2,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,2,8><<<(rows+1)/2,128,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; case 21: project<4,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,1,8><<<(rows+0)/1,128,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break; default: throw std::invalid_argument("unknown kernel configuration"); }
-    #undef DISPATCH
+    #define DECODE_DISPATCH(ID,WARPS,ROWS,PACK) \
+        case ID: project<WARPS,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND,ROWS,PACK> \
+        <<<(rows+ROWS-1)/ROWS,32*WARPS*ROWS,0,stream>>> \
+        (w,u,x,bias,ubias,residual,y,h,rows,cols); break;
+    switch(wpr) {
+        DECODE_CONFIGS(DECODE_DISPATCH)
+        default: throw std::invalid_argument("unknown kernel configuration");
+    }
+    #undef DECODE_DISPATCH
 }
 __global__ void gate_epilogue(const float* a, const float* b, const half* bias,
                               const half* ubias, half* h, int n) {
