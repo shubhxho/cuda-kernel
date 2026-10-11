@@ -26,6 +26,8 @@ def validate(report):
         if identity in seen:
             raise ValueError("duplicate benchmark case")
         seen.add(identity)
+        if case.get("operation") not in ("projection", "swiglu-ffn"):
+            raise ValueError("unknown benchmark operation")
         for key in ("hidden", "intermediate"):
             if not positive(case.get(key)) or not isinstance(case[key], int):
                 raise ValueError("invalid workload dimensions")
