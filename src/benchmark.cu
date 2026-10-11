@@ -47,8 +47,13 @@ struct Graph {
         // Warm-up initializes cuBLAS workspaces before graph capture.
         fn(); ck(cudaStreamSynchronize(c.stream));
         ck(cudaStreamBeginCapture(c.stream,cudaStreamCaptureModeThreadLocal));
-        fn(); ck(cudaStreamEndCapture(c.stream,&graph));
-        ck(cudaGraphInstantiate(&exec,graph,nullptr,nullptr,0));
+        try { fn(); } catch(...) {
+            cudaGraph_t abandoned=nullptr;cudaStreamEndCapture(c.stream,&abandoned);
+            if(abandoned) cudaGraphDestroy(abandoned);throw;
+        }
+        ck(cudaStreamEndCapture(c.stream,&graph));
+        auto status=cudaGraphInstantiate(&exec,graph,nullptr,nullptr,0);
+        if(status!=cudaSuccess) { cudaGraphDestroy(graph);graph=nullptr;ck(status); }
         ck(cudaGraphUpload(exec,c.stream));ck(cudaStreamSynchronize(c.stream));
     }
     ~Graph() { if(exec) cudaGraphExecDestroy(exec); if(graph) cudaGraphDestroy(graph); }
