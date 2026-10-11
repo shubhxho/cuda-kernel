@@ -150,6 +150,9 @@ def main():
             for side in (("baseline", "custom") if sample % 2 == 0 else ("custom", "baseline")):
                 enabled = side == "custom"
                 run = decode(ids)
+                expected_calls = args.tokens * len(layer_modules) if enabled else 0
+                if run["calls"] != expected_calls:
+                    raise RuntimeError("timed decode routing mismatch")
                 collected[side].append({k: run[k] for k in ("gpu_ms_per_token", "wall_ms_per_token", "calls")})
         stats = {side: {"samples": values,
                        "gpu_median_ms": statistics.median(v["gpu_ms_per_token"] for v in values),
