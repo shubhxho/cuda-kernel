@@ -54,6 +54,7 @@ def main():
         layer_modules.append(mlp)
     enabled = False
     selected_wpr = 1
+    selected_down = 1
     calls = 0
 
     for mlp, original in zip(layer_modules, originals):
