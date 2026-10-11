@@ -80,6 +80,11 @@ template<bool GATED, bool RESIDUAL, bool HALF_OUT = false, bool MODEL_ROUND = fa
 inline void launch(int wpr, const half* w, const half* u, const half* x,
                    const half* bias, const half* ubias, const half* residual,
                    float* y, half* h, int rows, int cols, cudaStream_t stream) {
+    if(rows<=0 || cols<=0 || !w || !x) throw std::invalid_argument("invalid projection input");
+    if constexpr (GATED) { if(!u || !h) throw std::invalid_argument("invalid gate buffers"); }
+    else if constexpr (HALF_OUT) { if(!h) throw std::invalid_argument("missing half output"); }
+    else { if(!y) throw std::invalid_argument("missing float output"); }
+    if constexpr (RESIDUAL) { if(!residual) throw std::invalid_argument("missing residual"); }
     #define DISPATCH(N) case N: project<N,GATED,RESIDUAL,HALF_OUT,MODEL_ROUND><<<(rows+3)/4,128*N,0,stream>>>(w,u,x,bias,ubias,residual,y,h,rows,cols); break
     switch (wpr) { DISPATCH(1); DISPATCH(2); DISPATCH(4); DISPATCH(8); default: throw std::invalid_argument("unknown kernel configuration"); }
     #undef DISPATCH
