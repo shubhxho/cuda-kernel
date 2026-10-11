@@ -85,12 +85,13 @@ __global__ __launch_bounds__(32*WPR*ROWS) void project(const half* __restrict__ 
     if constexpr (WPR > 1) {
         if (lane == 0) { partial_a[warp] = a; if constexpr (GATED) partial_b[warp] = b; }
         __syncthreads();
-        if (subwarp == 0 && lane == 0) {
-            a = 0; b = 0;
+        if (subwarp == 0) {
+            a=lane<WPR ? partial_a[group*WPR+lane] : 0;
+            if constexpr(GATED) b=lane<WPR ? partial_b[group*WPR+lane] : 0;
             #pragma unroll
-            for (int i = 0; i < WPR; ++i) {
-                a += partial_a[group*WPR+i];
-                if constexpr (GATED) b += partial_b[group*WPR+i];
+            for(int d=WPR/2;d;d>>=1) {
+                a+=__shfl_down_sync(0xffffffff,a,d);
+                if constexpr(GATED) b+=__shfl_down_sync(0xffffffff,b,d);
             }
         }
     }
