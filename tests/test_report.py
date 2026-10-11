@@ -32,6 +32,10 @@ class ReportTest(unittest.TestCase):
         data=fixture();del data["cases"][0]["hidden"]
         with self.assertRaises(ValueError): report.validate(data)
 
+    def test_fractional_samples(self):
+        data=fixture();data["samples"]=3.5
+        with self.assertRaises(ValueError): report.validate(data)
+
     def test_valid(self):
         self.assertIn("separated win", report.render(fixture()))
 
