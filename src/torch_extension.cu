@@ -18,6 +18,7 @@ void swiglu_out(torch::Tensor x,torch::Tensor gate,torch::Tensor up,torch::Tenso
     TORCH_CHECK(x.numel()==hidden && x.size(-1)==hidden,"single-token batch-one decode required");
     TORCH_CHECK(up.sizes()==gate.sizes() && down.size(0)==hidden && down.size(1)==intermediate,"incompatible weights");
     TORCH_CHECK(h.numel()==intermediate && y.sizes()==x.sizes(),"invalid workspace shape");
+    TORCH_CHECK(gate_config>=0 && gate_config<=1000 && down_config>=0 && down_config<=1000,"configuration out of range");
     TORCH_CHECK(decode::valid_config(int(gate_config)) && decode::valid_config(int(down_config)),"invalid configuration");
     auto overlaps=[](const torch::Tensor& a,const torch::Tensor& b) {
         auto ap=reinterpret_cast<uintptr_t>(a.data_ptr()),bp=reinterpret_cast<uintptr_t>(b.data_ptr());
