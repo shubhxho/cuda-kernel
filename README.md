@@ -2,7 +2,7 @@
 
 I want to make one small part of LLM inference faster: the feed-forward layers when a model is generating one token at a time. This repository contains the CUDA kernels, the cuBLAS comparison, and a runner that plugs the kernels into a real pretrained model.
 
-There is **no measured GPU win in this repository yet**. The code was written on a Mac without an NVIDIA GPU or `nvcc`, and the attempted Modal run could not connect. I would rather leave the benchmark cells empty than pretend a speedup happened. The [validation log](results/STATUS.md) records what actually ran.
+There is **no measured GPU win in this repository yet**. The code was written on a Mac without an NVIDIA GPU or `nvcc`, and the attempted Modal run could not connect. GitHub CI was blocked before execution by an account billing lock. I would rather leave the benchmark cells empty than pretend a speedup happened. The [validation log](results/STATUS.md) records what actually ran.
 
 ## What is implemented
 
