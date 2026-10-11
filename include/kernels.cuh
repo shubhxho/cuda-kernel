@@ -17,6 +17,7 @@ __global__ __launch_bounds__(32*WPR*ROWS) void project(const half* __restrict__ 
                         const half* __restrict__ x, const half* __restrict__ bias,
                         const half* __restrict__ ubias, const half* __restrict__ residual,
                         float* __restrict__ y, half* __restrict__ h, int rows, int cols) {
+    static_assert(WPR>0 && (WPR&(WPR-1))==0 && ROWS>0 && 32*WPR*ROWS<=1024, "invalid launch geometry");
     int lane = threadIdx.x & 31;
     int warp = threadIdx.x >> 5;
     int group = warp / WPR;
