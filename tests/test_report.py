@@ -36,6 +36,11 @@ class ReportTest(unittest.TestCase):
         data=fixture();data["samples"]=3.5
         with self.assertRaises(ValueError): report.validate(data)
 
+    def test_slower_results(self):
+        data=fixture();c=data["cases"][0]
+        c["custom"],c["baseline"]=c["baseline"],c["custom"];c["speedup"]=.5
+        self.assertIn("| slower |",report.render(data))
+
     def test_valid(self):
         self.assertIn("separated win", report.render(fixture()))
 
