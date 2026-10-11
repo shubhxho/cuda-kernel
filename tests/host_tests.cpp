@@ -1,4 +1,5 @@
 #include "contract.hpp"
+#include "config.hpp"
 #include <iostream>
 #include <limits>
 
@@ -24,6 +25,11 @@ int main() {
     require(matvec({1000000,1,-1000000},{1,1,1},1)[0]==1);
     { bool failed=false;try { median({1,INFINITY}); } catch(const std::invalid_argument&) { failed=true; } require(failed); }
     require(median({.125})==.125);
+    for(auto c:configs) {
+        require(valid_config(c.id) && config(c.id).pack==c.pack);
+        require(c.warps*c.rows*32<=1024 && (c.pack==2 || c.pack==8));
+    }
+    require(!valid_config(0) && !valid_config(999));
     int rejected = 0;
     try { matvec({1}, {1,2}, 1); } catch (const std::invalid_argument&) { ++rejected; }
     try { shapes("typo"); } catch (const std::invalid_argument&) { ++rejected; }
