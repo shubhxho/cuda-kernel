@@ -20,6 +20,10 @@ def fixture():
 
 
 class ReportTest(unittest.TestCase):
+    def test_boolean_error(self):
+        data=fixture();data["cases"][0]["custom"]["max_scaled_error"]=True
+        with self.assertRaises(ValueError): report.validate(data)
+
     def test_valid(self):
         self.assertIn("separated win", report.render(fixture()))
 
