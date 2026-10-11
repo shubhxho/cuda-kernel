@@ -185,9 +185,11 @@ std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int re
         c.graph=std::make_unique<Graph>(ctx,fn);
         c.tuning=timings(ctx,*c.graph,repeats,3);baseline.push_back(std::move(c));
     }
-    for(int wpr:{1,2,4,8}) {
-        Candidate c; c.name="custom-wpr"+std::to_string(wpr);
-        auto fn=[&ctx,&w,ffn,wpr]{w.custom(ctx,ffn,wpr);};
+    for(auto gate_config:configs) for(auto down:configs) {
+        if(!ffn && down.id!=1) continue;
+        int wpr=gate_config.id,down_id=down.id;
+        Candidate c; c.name="custom-g"+std::to_string(wpr)+"-d"+std::to_string(down_id);
+        auto fn=[&ctx,&w,ffn,wpr,down_id]{w.custom(ctx,ffn,wpr,down_id);};
         fn();c.error=w.validate(ctx,ffn);
         if(!c.error.passed) throw std::runtime_error(c.name+" correctness failed for "+shape.name);
         c.graph=std::make_unique<Graph>(ctx,fn);
