@@ -58,7 +58,9 @@ def main():
 
     for mlp, original in zip(layer_modules, originals):
         weights = (mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach())
-        def forward(x, weights=weights, mlp=mlp, original=original):
+        scratch = torch.empty((model.config.intermediate_size,), device="cuda", dtype=torch.float16)
+        output = torch.empty((1, 1, model.config.hidden_size), device="cuda", dtype=torch.float16)
+        def forward(x, weights=weights, original=original, scratch=scratch, output=output):
             nonlocal calls
             if enabled and x.numel() == x.shape[-1]:
                 calls += 1
