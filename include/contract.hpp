@@ -16,7 +16,7 @@ inline std::vector<Shape> shapes(const std::string& suite) {
     if (suite == "smoke") return {{"smoke", 512, 1024}};
     throw std::invalid_argument("suite must be correctness, smoke, or decode");
 }
-inline double silu(double x) { return x / (1.0 + std::exp(-x)); }
+inline double silu(double x) { if(x>=0) return x/(1.0+std::exp(-x)); double e=std::exp(x); return x*e/(1.0+e); }
 // Double reference, independent of CUDA reduction order and cuBLAS.
 inline std::vector<float> matvec(const std::vector<float>& w,
                                 const std::vector<float>& x, int rows) {
