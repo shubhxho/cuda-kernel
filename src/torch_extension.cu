@@ -19,6 +19,14 @@ void swiglu_out(torch::Tensor x,torch::Tensor gate,torch::Tensor up,torch::Tenso
     TORCH_CHECK(up.sizes()==gate.sizes() && down.size(0)==hidden && down.size(1)==intermediate,"incompatible weights");
     TORCH_CHECK(h.numel()==intermediate && y.sizes()==x.sizes(),"invalid workspace shape");
     TORCH_CHECK(decode::valid_config(int(gate_config)) && decode::valid_config(int(down_config)),"invalid configuration");
+    auto overlaps=[](const torch::Tensor& a,const torch::Tensor& b) {
+        auto ap=reinterpret_cast<uintptr_t>(a.data_ptr()),bp=reinterpret_cast<uintptr_t>(b.data_ptr());
+        return ap<bp+b.numel()*b.element_size() && bp<ap+a.numel()*a.element_size();
+    };
+    for(const auto& t:{x,gate,up,down}) {
+        TORCH_CHECK(!overlaps(h,t) && !overlaps(y,t),"workspace overlaps input storage");
+    }
+    TORCH_CHECK(!overlaps(h,y),"scratch and output overlap");
     c10::cuda::CUDAGuard guard(x.device());
     auto stream=at::cuda::getCurrentCUDAStream(x.get_device()).stream();
     auto ptr=[](const torch::Tensor& t){return reinterpret_cast<const half*>(t.data_ptr<at::Half>());};
