@@ -87,6 +87,7 @@ def main():
     parser.add_argument("input", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--require-win", action="store_true")
+    parser.add_argument("--require-all-wins", action="store_true")
     args = parser.parse_args()
     report = validate(json.loads(args.input.read_text()))
     text = render(report)
