@@ -98,7 +98,7 @@ __global__ void gate_epilogue(const float* a, const float* b, const half* bias,
     int i = blockIdx.x*blockDim.x + threadIdx.x;
     if (i < n) {
         float g = a[i]+__half2float(bias[i]), v = b[i]+__half2float(ubias[i]);
-        h[i] = __float2half_rn((g/(1.0f+expf(-g)))*v);
+        h[i] = __float2half_rn((device_silu(g))*v);
     }
 }
 __global__ void residual_epilogue(float* y, const half* bias, const half* x, int n) {
