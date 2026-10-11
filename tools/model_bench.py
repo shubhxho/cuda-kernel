@@ -104,7 +104,7 @@ def main():
         mlp = layer_modules[0]
         tx = torch.randn((1, 1, model.config.hidden_size), device="cuda", dtype=torch.float16)
         expected = originals[0](tx)
-        for wpr in (1, 2, 4, 8):
+        for wpr in ext.config_ids():
             y = ext.swiglu(tx, mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach(), wpr)
             torch.testing.assert_close(y, expected, atol=0.01, rtol=0.02)
             graph = torch.cuda.CUDAGraph()
