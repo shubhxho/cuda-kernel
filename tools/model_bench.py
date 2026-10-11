@@ -64,7 +64,8 @@ def main():
             nonlocal calls
             if enabled and x.numel() == x.shape[-1]:
                 calls += 1
-                return ext.swiglu(x.contiguous(), *weights, selected_wpr)
+                ext.swiglu_out(x.contiguous(), *weights, scratch, output, selected_wpr, selected_wpr)
+                return output
             return original(x)
         mlp.forward = forward
 
