@@ -167,7 +167,7 @@ def main():
               "cuda": torch.version.cuda, "transformers": transformers.__version__,
               "precision": "fp16", "attention": "sdpa", "batch": 1,
               "timing": "eager-decode-gpu-events-and-wall", "prefill_included": False,
-              "patched_layers": len(layer_modules), "wpr": selected_wpr, "tuning": tuning,
+              "patched_layers": len(layer_modules), "wpr": selected_wpr, "down_config": selected_down, "tuning": tuning,
               "source_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
               "cases": records}
     args.output.parent.mkdir(parents=True, exist_ok=True)
