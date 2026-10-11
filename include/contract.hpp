@@ -35,6 +35,7 @@ inline Error compare(const std::vector<float>& actual, const std::vector<float>&
                      double atol = 0.003, double rtol = 0.01) {
     if (actual.size() != expected.size() || actual.empty())
         throw std::invalid_argument("comparison sizes differ or are empty");
+    if(!std::isfinite(atol) || !std::isfinite(rtol) || atol<=0 || rtol<0) throw std::invalid_argument("invalid tolerance");
     Error e;
     for (size_t i = 0; i < actual.size(); ++i) {
         if (!std::isfinite(actual[i]) || !std::isfinite(expected[i])) {
