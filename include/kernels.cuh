@@ -5,6 +5,10 @@
 #include "config.hpp"
 
 namespace decode {
+__device__ __forceinline__ float device_silu(float x) {
+    if(x>=0) return x/(1.0f+expf(-x));
+    float e=expf(x); return x*e/(1.0f+e);
+}
 // Each row gets WPR warps. Half2 loads coalesce; odd strides use scalar loads.
 // All lanes participate in reductions, including rows outside the output tail.
 template<int WPR, bool GATED, bool RESIDUAL, bool HALF_OUT = false, bool MODEL_ROUND = false>
