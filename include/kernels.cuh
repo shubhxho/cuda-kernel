@@ -81,7 +81,7 @@ __global__ __launch_bounds__(32*WPR*ROWS) void project(const half* __restrict__ 
         if constexpr (GATED) b += __shfl_down_sync(0xffffffff, b, d);
     }
     __shared__ float partial_a[ROWS*WPR];
-    __shared__ float partial_b[ROWS*WPR];
+    __shared__ float partial_b[GATED ? ROWS*WPR : 1];
     if constexpr (WPR > 1) {
         if (lane == 0) { partial_a[warp] = a; if constexpr (GATED) partial_b[warp] = b; }
         __syncthreads();
