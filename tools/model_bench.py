@@ -105,8 +105,12 @@ def main():
         mlp = layer_modules[0]
         tx = torch.randn((1, 1, model.config.hidden_size), device="cuda", dtype=torch.float16)
         expected = originals[0](tx)
-        for wpr in ext.config_ids():
-            y = ext.swiglu(tx, mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach(), wpr)
+        tune_weights = (mlp.gate_proj.weight.detach(), mlp.up_proj.weight.detach(), mlp.down_proj.weight.detach())
+        tune_h = torch.empty((model.config.intermediate_size,), device="cuda", dtype=torch.float16)
+        tune_y = torch.empty_like(tx)
+        for wpr, down_id in ((g, d) for g in ext.config_ids() for d in ext.config_ids()):
+            ext.swiglu_out(tx, *tune_weights, tune_h, tune_y, wpr, down_id)
+            y = tune_y
             torch.testing.assert_close(y, expected, atol=0.01, rtol=0.02)
             graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(graph):
