@@ -181,7 +181,9 @@ def main():
               "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
               "peak_reserved_bytes": torch.cuda.max_memory_reserved(), "cases": records}
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    temporary = args.output.with_name(args.output.name + ".tmp")
+    temporary.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    temporary.replace(args.output)
 
 
 if __name__ == "__main__":
