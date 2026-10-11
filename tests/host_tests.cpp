@@ -23,6 +23,7 @@ int main() {
     { bool failed=false;try { compare({0},{0},NAN,.01); } catch(const std::invalid_argument&) { failed=true; } require(failed); }
     require(matvec({1000000,1,-1000000},{1,1,1},1)[0]==1);
     { bool failed=false;try { median({1,INFINITY}); } catch(const std::invalid_argument&) { failed=true; } require(failed); }
+    require(median({.125})==.125);
     int rejected = 0;
     try { matvec({1}, {1,2}, 1); } catch (const std::invalid_argument&) { ++rejected; }
     try { shapes("typo"); } catch (const std::invalid_argument&) { ++rejected; }
