@@ -49,6 +49,7 @@ struct Graph {
         ck(cudaStreamBeginCapture(c.stream,cudaStreamCaptureModeThreadLocal));
         fn(); ck(cudaStreamEndCapture(c.stream,&graph));
         ck(cudaGraphInstantiate(&exec,graph,nullptr,nullptr,0));
+        ck(cudaGraphUpload(exec,c.stream));ck(cudaStreamSynchronize(c.stream));
     }
     ~Graph() { if(exec) cudaGraphExecDestroy(exec); if(graph) cudaGraphDestroy(graph); }
     Graph(const Graph&) = delete;
