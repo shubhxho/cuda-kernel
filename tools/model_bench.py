@@ -128,6 +128,7 @@ def main():
             tuning.append({"wpr": wpr, "down_config": down_id, "samples_us": samples})
     selected = min(tuning, key=lambda c: statistics.median(c["samples_us"]))
     selected_wpr, selected_down = selected["wpr"], selected["down_config"]
+    torch.cuda.reset_peak_memory_stats()
     records = []
     for prompt in PROMPTS:
         ids = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
