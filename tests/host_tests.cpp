@@ -17,6 +17,7 @@ int main() {
     require(json_escape("a\"\n\\") == "a\\\"\\u000a\\\\");
     require(std::isfinite(silu(-1000)) && silu(-1000)==0);
     require(silu(1000)==1000);
+    require(!compare({INFINITY}, {INFINITY}).passed);
     int rejected = 0;
     try { matvec({1}, {1,2}, 1); } catch (const std::invalid_argument&) { ++rejected; }
     try { shapes("typo"); } catch (const std::invalid_argument&) { ++rejected; }
