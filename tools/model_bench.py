@@ -125,7 +125,7 @@ def main():
                     graph.replay()
                 end.record(); end.synchronize()
                 samples.append(start.elapsed_time(end)*10)
-            tuning.append({"wpr": wpr, "samples_us": samples})
+            tuning.append({"wpr": wpr, "down_config": down_id, "samples_us": samples})
     selected_wpr = min(tuning, key=lambda c: statistics.median(c["samples_us"]))["wpr"]
     records = []
     for prompt in PROMPTS:
