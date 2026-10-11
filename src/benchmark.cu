@@ -64,6 +64,7 @@ struct Graph {
 struct Event {
     cudaEvent_t event = nullptr;
     Event() { ck(cudaEventCreate(&event)); }
+    Event(const Event&)=delete;Event& operator=(const Event&)=delete;
     ~Event() { if(event) cudaEventDestroy(event); }
 };
 std::vector<double> timings(Context& c, Graph& g, int repeats, int samples) {
