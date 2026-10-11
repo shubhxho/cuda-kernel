@@ -36,7 +36,28 @@ __global__ __launch_bounds__(32*WPR*ROWS) void project(const half* __restrict__ 
     float a = 0, b = 0;
     if (row < rows) {
         size_t offset = size_t(row)*cols;
-        if ((cols & 1) == 0 && (reinterpret_cast<uintptr_t>(w+offset)%4)==0 && (reinterpret_cast<uintptr_t>(x)%4)==0 && (!GATED || reinterpret_cast<uintptr_t>(u+offset)%4==0)) {
+        if (PACK==8 && cols%8==0 && reinterpret_cast<uintptr_t>(w+offset)%16==0 &&
+            reinterpret_cast<uintptr_t>(x)%16==0 && (!GATED || reinterpret_cast<uintptr_t>(u+offset)%16==0)) {
+            float aa[4]={0,0,0,0},bb[4]={0,0,0,0};
+            for(int c=t;c<cols/8;c+=32*WPR) {
+                uint4 av=load128(w+offset+size_t(c)*8),xv=load128(x+size_t(c)*8);
+                unsigned aw[4]={av.x,av.y,av.z,av.w},xw[4]={xv.x,xv.y,xv.z,xv.w};
+                uint4 bv{};
+                if constexpr(GATED) bv=load128(u+offset+size_t(c)*8);
+                unsigned bw[4]={bv.x,bv.y,bv.z,bv.w};
+                #pragma unroll
+                for(int i=0;i<4;++i) {
+                    float2 af=unpack_pair(aw[i]),xf=unpack_pair(xw[i]);
+                    aa[i]=fmaf(af.x,xf.x,aa[i]);aa[i]=fmaf(af.y,xf.y,aa[i]);
+                    if constexpr(GATED) {
+                        float2 bf=unpack_pair(bw[i]);
+                        bb[i]=fmaf(bf.x,xf.x,bb[i]);bb[i]=fmaf(bf.y,xf.y,bb[i]);
+                    }
+                }
+            }
+            a=(aa[0]+aa[1])+(aa[2]+aa[3]);
+            if constexpr(GATED) b=(bb[0]+bb[1])+(bb[2]+bb[3]);
+        } else if ((cols & 1) == 0 && (reinterpret_cast<uintptr_t>(w+offset)%4)==0 && (reinterpret_cast<uintptr_t>(x)%4)==0 && (!GATED || reinterpret_cast<uintptr_t>(u+offset)%4==0)) {
             auto ww = reinterpret_cast<const half2*>(w + offset);
             auto xx = reinterpret_cast<const half2*>(x);
             for (int c = t; c < cols/2; c += 32*WPR) {
