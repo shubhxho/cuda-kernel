@@ -37,6 +37,7 @@ def benchmark(with_model: bool = True):
         ["python", "/workspace/tools/report.py", str(directory / "kernels.json"), "--output", str(directory / "kernels.md")],
     ]
     if with_model:
+        commands.append(["python", "/workspace/tools/gpu_validate.py"])
         commands.append(["python", "/workspace/tools/model_bench.py", "--output", str(directory / "model.json")])
         commands.append(["python", "/workspace/tools/model_report.py", str(directory / "model.json"), "--output", str(directory / "model.md")])
     logs = []
@@ -44,7 +45,8 @@ def benchmark(with_model: bool = True):
         process = subprocess.run(command, cwd="/workspace", text=True, capture_output=True, timeout=600)
         logs.append({"command": command, "exit_code": process.returncode, "stdout": process.stdout, "stderr": process.stderr})
         if process.returncode:
-            return {"ok": False, "logs": logs, "files": {}}
+            return {"ok": False, "logs": logs,
+                    "files": {p.name: p.read_text() for p in directory.iterdir() if p.is_file()}}
     source_paths = [p for folder in ("src", "include", "tools") for p in Path("/workspace", folder).rglob("*")
                     if p.is_file() and "__pycache__" not in p.parts]
     provenance = {str(p.relative_to("/workspace")): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths}
