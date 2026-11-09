@@ -34,3 +34,18 @@ Every commit was checked for non-empty changes, Python syntax, and whitespace er
 Final-workspace validation after the series: both CTests passed, all 14 Python report tests passed, and the portable mapping audit passed 1,520 cases. The Modal 1.5.0 app definition imported successfully. A fresh GPU run again failed before execution with `Could not connect to the Modal server`; the active profile was also reported as `Unknown (profile misconfigured)`.
 
 Three follow-up commits unify the dispatch registry, add the mapping audit, and retain successful partial artifacts when a later GPU gate fails. A fourth follow-up records these observations. The 100-commit series and these four follow-ups total 104 new commits.
+
+## 2026-11-09 cloud workspace (not an RTX 5060)
+
+Recorded while adding the RTX 5060 write-up. This machine is an x86_64 KVM Intel Xeon with four cores.
+
+| Gate | Result |
+|---|---|
+| `nvidia-smi` | Missing. No NVIDIA driver in the environment. |
+| `nvcc` | Missing. CUDA compilation was not executed. |
+| PyTorch | Not installed. |
+| Host CTest + Python unit tests + intensity tables + environment probe | Passed with `CXX=g++`: 2 CTests, 22 unittest cases, `tools/intensity.py`, `tools/run_bench.py --probe-only`. Default `/usr/bin/c++` is Clang 18 and could not link `libstdc++` in this image. |
+| GPU correctness, sanitizer, cuBLAS timing, TinyLlama | Still unmeasured. No device to run them on. |
+| RTX 5060 latency or speedup | Not measured. Analytical floors are in `docs/rtx-5060-bounds.json` and are labeled as bounds, not results. |
+
+Do not read `docs/rtx-5060.md` as a substitute for `results/kernels.json` from a 5060.
