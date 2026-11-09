@@ -15,6 +15,7 @@ int main() {
     require(median({4,1,2,3}) == 2.5);
     require(median({4,1,2}) == 2);
     require(shapes("correctness")[1].hidden == 37);
+    require(shapes("tinyllama")[0].hidden == 2048 && shapes("tinyllama")[0].intermediate == 5632);
     require(json_escape("a\"\n\\") == "a\\\"\\u000a\\\\");
     require(std::isfinite(silu(-1000)) && silu(-1000)==0);
     require(silu(1000)==1000);

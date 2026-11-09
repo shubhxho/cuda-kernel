@@ -51,15 +51,30 @@ def validate(report):
         ratio = case["baseline"]["median_us"] / case["custom"]["median_us"]
         if not math.isclose(ratio, case["speedup"], rel_tol=1e-7):
             raise ValueError("speedup does not match timings")
+        transfer = case.get("transfer_inclusive")
+        if transfer is not None:
+            for side in ("custom", "baseline"):
+                values = transfer[side]["samples_us"]
+                if len(values) != report["samples"] or not all(positive(v) for v in values):
+                    raise ValueError("invalid transfer-inclusive timings")
+                if not math.isclose(transfer[side]["median_us"], statistics.median(values), rel_tol=1e-7):
+                    raise ValueError("transfer median does not match raw samples")
     return report
 
 
 def render(report):
     validate(report)
+    extra = []
+    if report.get("result_class"):
+        extra.append(f"Result class: `{report['result_class']}`.")
+    if report.get("sm_count"):
+        extra.append(f"SMs {report['sm_count']}; device memory {report.get('total_memory_bytes', 0)} bytes.")
     lines = [f"GPU: {report['gpu']} (SM {report['compute_capability']}).",
-             f"CUDA runtime {report['runtime_version']}; cuBLAS {report['cublas_version']}.", "",
+             f"CUDA runtime {report['runtime_version']}; cuBLAS {report['cublas_version']}."]
+    lines += extra
+    lines += ["",
              f"Data: `{report['data']}`. Resident weights; warmed CUDA Graphs; GPU event timing.",
-             "Fresh holdout samples follow tuning. Transfers, CPU reference, and tuning are excluded.", "",
+             "Kernel-only holdout samples follow tuning. CPU reference and tuning are excluded from latency.", "",
              "| Workload | Operation | Custom µs | cuBLAS µs | Ratio | Evidence |",
              "|---|---|---:|---:|---:|---|"]
     for c in report["cases"]:
@@ -76,9 +91,23 @@ def render(report):
             xs = sorted(c[side]["samples_us"])
             return xs[math.ceil(0.95 * len(xs)) - 1]
         lines.append(f"| {c['shape']} | {c['operation']} | {p95('custom'):.3f} | {p95('baseline'):.3f} |")
+    if any("transfer_inclusive" in c for c in report["cases"]):
+        lines += ["", "Transfer-inclusive (pinned H2D of the token input, kernel graph, D2H of the output; weights resident):", "",
+                  "| Workload | Operation | Custom µs | cuBLAS µs | Custom p95 µs | Baseline p95 µs |",
+                  "|---|---|---:|---:|---:|---:|"]
+        for c in report["cases"]:
+            t = c.get("transfer_inclusive")
+            if not t:
+                continue
+            def tp95(side):
+                xs = sorted(t[side]["samples_us"])
+                return xs[math.ceil(0.95 * len(xs)) - 1]
+            lines.append(f"| {c['shape']} | {c['operation']} | {t['custom']['median_us']:.3f} | "
+                         f"{t['baseline']['median_us']:.3f} | {tp95('custom'):.3f} | {tp95('baseline'):.3f} |")
     lines += ["", "A separated win requires at least 5% median speedup and every custom sample below every baseline sample.",
               "This compares the selected cuBLAS GemmEx algorithms. It does not establish a win against cuBLASLt, cuDNN,",
-              "TensorRT-LLM, a complete model, or other GPUs. Synthetic shapes are not pretrained-model evidence."]
+              "TensorRT-LLM, a complete model, or other GPUs. Synthetic shapes are not pretrained-model evidence.",
+              "Kernel-only rows are not transfer-inclusive rows. Neither is an RTX 5060 result unless the GPU name says so."]
     return "\n".join(lines) + "\n"
 
 

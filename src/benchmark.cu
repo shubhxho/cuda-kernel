@@ -2,6 +2,7 @@
 #include "kernels.cuh"
 #include <cublas_v2.h>
 #include <chrono>
+#include <cstring>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -106,6 +107,7 @@ struct Workload {
     int hidden, intermediate;
     Buffer<half> wg,wu,wd,x,bg,bu,bd,h;
     Buffer<float> g,u,y;
+    std::vector<half> host_x;
     std::vector<float> projection_ref,ffn_ref;
     Workload(const Shape& s, unsigned seed, const std::string& fixture) : hidden(s.hidden),intermediate(s.intermediate),
         wg(size_t(hidden)*intermediate),wu(size_t(hidden)*intermediate),
@@ -123,6 +125,7 @@ struct Workload {
             hbg=load_half(fixture,"gate_bias.f16",bg.n);hbu=load_half(fixture,"up_bias.f16",bu.n);
             hbd=load_half(fixture,"down_bias.f16",bd.n);
         }
+        host_x=hx;
         wg.upload(hwg);wu.upload(hwu);wd.upload(hwd);x.upload(hx);
         bg.upload(hbg);bu.upload(hbu);bd.upload(hbd);
         auto fx=to_float(hx);
@@ -168,9 +171,39 @@ struct Workload {
     }
 };
 struct Candidate {
-    std::string name; Error error; std::vector<double> tuning,measured;
+    std::string name; Error error; std::vector<double> tuning,measured,transfer;
     std::unique_ptr<Graph> graph;
 };
+std::vector<double> transfer_timings(Context& c, Graph& g, const half* host_x, half* dev_x, size_t nx,
+                                     const void* dev_out, size_t out_bytes, int repeats, int samples) {
+    half* pin_x=nullptr; char* pin_y=nullptr;
+    ck(cudaMallocHost(reinterpret_cast<void**>(&pin_x), nx*sizeof(half)));
+    ck(cudaMallocHost(reinterpret_cast<void**>(&pin_y), out_bytes));
+    std::memcpy(pin_x, host_x, nx*sizeof(half));
+    auto release=[&]{ cudaFreeHost(pin_x); cudaFreeHost(pin_y); };
+    try {
+        for(int i=0;i<20;++i) {
+            ck(cudaMemcpyAsync(dev_x, pin_x, nx*sizeof(half), cudaMemcpyHostToDevice, c.stream));
+            g.run(c);
+            ck(cudaMemcpyAsync(pin_y, dev_out, out_bytes, cudaMemcpyDeviceToHost, c.stream));
+        }
+        ck(cudaStreamSynchronize(c.stream));
+        Event a,b; std::vector<double> out; out.reserve(samples);
+        for(int s=0;s<samples;++s) {
+            ck(cudaEventRecord(a.event,c.stream));
+            for(int i=0;i<repeats;++i) {
+                ck(cudaMemcpyAsync(dev_x, pin_x, nx*sizeof(half), cudaMemcpyHostToDevice, c.stream));
+                g.run(c);
+                ck(cudaMemcpyAsync(pin_y, dev_out, out_bytes, cudaMemcpyDeviceToHost, c.stream));
+            }
+            ck(cudaEventRecord(b.event,c.stream)); ck(cudaEventSynchronize(b.event));
+            float ms=0; ck(cudaEventElapsedTime(&ms,a.event,b.event));
+            out.push_back(double(ms)*1000/repeats);
+        }
+        release();
+        return out;
+    } catch(...) { release(); throw; }
+}
 std::string array_json(const std::vector<double>& xs) {
     std::ostringstream o; o<<'[';
     for(size_t i=0;i<xs.size();++i) { if(i) o<<','; o<<std::setprecision(10)<<xs[i]; }
@@ -183,7 +216,7 @@ std::string candidate_json(const Candidate& c) {
      <<",\"samples_us\":"<<array_json(c.measured)<<",\"median_us\":"<<median(c.measured)<<'}';
     return o.str();
 }
-std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int repeats,int samples) {
+std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int repeats,int samples,bool include_transfers) {
     std::vector<Candidate> custom,baseline;
     for(int algo:{0,1}) {
         Candidate c; c.name=algo==0?"cublas-default":"cublas-tensor-op";
@@ -222,14 +255,29 @@ std::string run_case(Context& ctx,Workload& w,const Shape& shape,bool ffn,int re
     a.graph->run(ctx); a.error=w.validate(ctx,ffn);
     b.graph->run(ctx); b.error=w.validate(ctx,ffn);
     if(!a.error.passed || !b.error.passed) throw std::runtime_error("captured graph correctness failed");
+    if(include_transfers) {
+        size_t out_bytes=(ffn?w.y.n:w.g.n)*sizeof(float);
+        const void* dev_out=ffn?static_cast<const void*>(w.y.p):static_cast<const void*>(w.g.p);
+        a.transfer=transfer_timings(ctx,*a.graph,w.host_x.data(),w.x.p,w.host_x.size(),dev_out,out_bytes,repeats,samples);
+        b.transfer=transfer_timings(ctx,*b.graph,w.host_x.data(),w.x.p,w.host_x.size(),dev_out,out_bytes,repeats,samples);
+    }
     double ratio=median(b.measured)/median(a.measured);
     std::cerr<<shape.name<<' '<<(ffn?"swiglu-ffn":"projection")<<": custom "<<median(a.measured)
-             <<" us, cuBLAS "<<median(b.measured)<<" us, ratio "<<ratio<<"x\n";
+             <<" us, cuBLAS "<<median(b.measured)<<" us, ratio "<<ratio<<"x";
+    if(include_transfers)
+        std::cerr<<"; transfer-inclusive custom "<<median(a.transfer)<<" us, cuBLAS "<<median(b.transfer)<<" us";
+    std::cerr<<'\n';
     std::ostringstream out;out<<std::setprecision(10);
     out<<"{\"shape\":\""<<shape.name<<"\",\"operation\":\""<<(ffn?"swiglu-ffn":"projection")
        <<"\",\"hidden\":"<<w.hidden<<",\"intermediate\":"<<w.intermediate
        <<",\"custom\":"<<candidate_json(a)<<",\"baseline\":"<<candidate_json(b)
-       <<",\"speedup\":"<<ratio<<",\"candidates\":[";
+       <<",\"speedup\":"<<ratio;
+    if(include_transfers) {
+        out<<",\"transfer_inclusive\":{\"custom\":{\"samples_us\":"<<array_json(a.transfer)
+           <<",\"median_us\":"<<median(a.transfer)<<"},\"baseline\":{\"samples_us\":"<<array_json(b.transfer)
+           <<",\"median_us\":"<<median(b.transfer)<<"}}";
+    }
+    out<<",\"candidates\":[";
     bool first=true;
     for(auto* cs:{&baseline,&custom}) for(auto& c:*cs) {
         if(!first) out<<',';first=false;
@@ -245,13 +293,16 @@ int integer(const std::string& v) {
 int main(int argc,char** argv) {
     try {
         std::string suite="decode",output,fixture;int repeats=100,samples=9,seed=17,hidden=0,intermediate=0;
+        bool include_transfers=false;
         for(int i=1;i<argc;++i) {
             std::string arg=argv[i];
             if(arg=="--help") {
-                std::cout<<"decode_bench [--suite decode|smoke|correctness] [--repeats 100] [--samples 9] [--seed 17] [--output result.json]\n"
+                std::cout<<"decode_bench [--suite decode|smoke|correctness|tinyllama] [--repeats 100] [--samples 9] [--seed 17] [--output result.json]\n"
+                         <<"  --include-transfers : also time H2D input + kernel + D2H output (weights stay resident)\n"
                          <<"  --fixture DIR --hidden H --intermediate I : captured model FFN and input\n";
                 return 0;
             }
+            if(arg=="--include-transfers") { include_transfers=true; continue; }
             if(i+1>=argc) throw std::invalid_argument("missing argument value");
             std::string value=argv[++i];
             if(arg=="--suite") suite=value;
@@ -276,12 +327,22 @@ int main(int argc,char** argv) {
         Context ctx;int blas_version=0,driver=0,runtime=0;
         bk(cublasGetVersion(ctx.blas,&blas_version));ck(cudaDriverGetVersion(&driver));ck(cudaRuntimeGetVersion(&runtime));
         std::ostringstream result;
-        result<<"{\"schema_version\":1,\"gpu\":\""<<json_escape(prop.name)
+        result<<"{\"schema_version\":1,\"result_class\":\"measured\",\"gpu\":\""<<json_escape(prop.name)
               <<"\",\"compute_capability\":\""<<prop.major<<'.'<<prop.minor<<"\",\"l2_bytes\":"<<prop.l2CacheSize
+              <<",\"total_memory_bytes\":"<<prop.totalGlobalMem
+              <<",\"sm_count\":"<<prop.multiProcessorCount
+              <<",\"clock_khz\":"<<prop.clockRate
+              <<",\"memory_clock_khz\":"<<prop.memoryClockRate
+              <<",\"memory_bus_bits\":"<<prop.memoryBusWidth
+              <<",\"shared_mem_per_block\":"<<prop.sharedMemPerBlock
+              <<",\"regs_per_block\":"<<prop.regsPerBlock
+              <<",\"warp_size\":"<<prop.warpSize
+              <<",\"pci_bus_id\":"<<prop.pciBusID
               <<",\"driver_version\":"<<driver<<",\"runtime_version\":"<<runtime
               <<",\"cublas_version\":"<<blas_version<<",\"suite\":\""<<suite
               <<"\",\"seed\":"<<seed<<",\"repeats\":"<<repeats<<",\"samples\":"<<samples
               <<",\"timing\":\"cuda-graph-events\",\"cache_policy\":\"resident-weights-warm\""
+              <<",\"transfer_timing\":\""<<(include_transfers?"h2d-input-kernel-d2h-output-events":"omitted")<<"\""
               <<",\"data\":\""<<(fixture.empty()?"synthetic-fp16-model-shapes":"captured-model-fixture")
               <<"\",\"atol\":0.003,\"rtol\":0.01,\"cases\":[";
         bool first=true;
@@ -289,7 +350,7 @@ int main(int argc,char** argv) {
             Workload w(shape,unsigned(seed),fixture);
             for(bool ffn:{false,true}) {
                 if(!first) result<<',';first=false;
-                result<<run_case(ctx,w,shape,ffn,repeats,samples);
+                result<<run_case(ctx,w,shape,ffn,repeats,samples,include_transfers);
             }
         }
         result<<"]}\n";
