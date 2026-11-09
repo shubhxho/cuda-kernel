@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "result_class": "analytical-lower-bound-not-a-benchmark",
+  "label": "ESTIMATES and analytical bounds only. Not RTX 5060 measurements.",
+  "retrieved": "2026-11-09",
+  "precision": {
+    "weights": "fp16",
+    "input": "fp16",
+    "accumulation": "fp32",
+    "custom_hidden": "fp16",
+    "custom_final": "fp32",
+    "model_path": "fp16 with model-rounding epilogue"
+  },
+  "kernels": "CUDA-core FP32 FMA after converting FP16 loads. No tensor-core MMA in include/kernels.cuh.",
+  "arithmetic_intensity_note": "Weight-dominated GEMV is about 1 FLOP/byte. Published 614 AI TOPS and RT TFLOPS are not used in this bound.",
+  "shapes": [
+    {
+      "name": "decode-1b-shape",
+      "hidden": 2048,
+      "intermediate": 8192,
+      "note": "Benchmark suite shape. Not TinyLlama; TinyLlama intermediate is 5632.",
+      "projection": {
+        "flops": 33554432,
+        "weight_bytes": 33554432,
+        "input_bytes": 4096,
+        "output_bytes": 32768,
+        "bytes": 33591296,
+        "flops_per_byte": 0.9989025728569687
+      },
+      "fused_gate": {
+        "flops": 67149824,
+        "weight_bytes": 67108864,
+        "input_bytes": 4096,
+        "output_bytes": 16384,
+        "bias_bytes": 32768,
+        "epilogue_flops": 40960,
+        "bytes": 67162112,
+        "flops_per_byte": 0.9998170397023846
+      },
+      "down_residual": {
+        "flops": 33554432,
+        "weight_bytes": 33554432,
+        "input_bytes": 16384,
+        "output_bytes": 8192,
+        "residual_bytes": 4096,
+        "bias_bytes": 4096,
+        "bytes": 33587200,
+        "flops_per_byte": 0.9990243902439024
+      },
+      "custom_ffn": {
+        "flops": 100704256,
+        "bytes": 100749312,
+        "weight_bytes": 100663296,
+        "flops_per_byte": 0.9995527909907712
+      },
+      "library_extra_bytes_vs_fused": 139264,
+      "library_ffn_bytes_estimate": 100888576,
+      "single_layer_working_set_bytes": 100777984,
+      "bandwidth_lower_bounds_us": [
+        {
+          "bandwidth_id": "nvidia-laptop-5060-published",
+          "bandwidth_label": "384 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 87.47733333333333,
+          "custom_ffn_us_if_100pct_peak": 262.368,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        },
+        {
+          "bandwidth_id": "partner-desktop-28gbps-derived",
+          "bandwidth_label": "448 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 74.98057142857142,
+          "custom_ffn_us_if_100pct_peak": 224.88685714285714,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        }
+      ]
+    },
+    {
+      "name": "tinyllama-1.1b",
+      "hidden": 2048,
+      "intermediate": 5632,
+      "note": "TinyLlama-1.1B-Chat-v1.0 MLP dims used by tools/model_bench.py.",
+      "projection": {
+        "flops": 23068672,
+        "weight_bytes": 23068672,
+        "input_bytes": 4096,
+        "output_bytes": 22528,
+        "bytes": 23095296,
+        "flops_per_byte": 0.9988472111377139
+      },
+      "fused_gate": {
+        "flops": 46165504,
+        "weight_bytes": 46137344,
+        "input_bytes": 4096,
+        "output_bytes": 11264,
+        "bias_bytes": 22528,
+        "epilogue_flops": 28160,
+        "bytes": 46175232,
+        "flops_per_byte": 0.9997893242853658
+      },
+      "down_residual": {
+        "flops": 23068672,
+        "weight_bytes": 23068672,
+        "input_bytes": 11264,
+        "output_bytes": 8192,
+        "residual_bytes": 4096,
+        "bias_bytes": 4096,
+        "bytes": 23096320,
+        "flops_per_byte": 0.9988029261804477
+      },
+      "custom_ffn": {
+        "flops": 69234176,
+        "bytes": 69271552,
+        "weight_bytes": 69206016,
+        "flops_per_byte": 0.9994604422894986
+      },
+      "library_extra_bytes_vs_fused": 98304,
+      "library_ffn_bytes_estimate": 69369856,
+      "single_layer_working_set_bytes": 69289984,
+      "bandwidth_lower_bounds_us": [
+        {
+          "bandwidth_id": "nvidia-laptop-5060-published",
+          "bandwidth_label": "384 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 60.144,
+          "custom_ffn_us_if_100pct_peak": 180.39466666666667,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        },
+        {
+          "bandwidth_id": "partner-desktop-28gbps-derived",
+          "bandwidth_label": "448 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 51.552,
+          "custom_ffn_us_if_100pct_peak": 154.624,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        }
+      ]
+    },
+    {
+      "name": "decode-7b-shape",
+      "hidden": 4096,
+      "intermediate": 11008,
+      "note": "Llama-2-7B-class FFN shape. One layer, not the full 7B model.",
+      "projection": {
+        "flops": 90177536,
+        "weight_bytes": 90177536,
+        "input_bytes": 8192,
+        "output_bytes": 44032,
+        "bytes": 90229760,
+        "flops_per_byte": 0.9994212109175509
+      },
+      "fused_gate": {
+        "flops": 180410112,
+        "weight_bytes": 180355072,
+        "input_bytes": 8192,
+        "output_bytes": 22016,
+        "bias_bytes": 44032,
+        "epilogue_flops": 55040,
+        "bytes": 180429312,
+        "flops_per_byte": 0.9998935871351103
+      },
+      "down_residual": {
+        "flops": 90177536,
+        "weight_bytes": 90177536,
+        "input_bytes": 22016,
+        "output_bytes": 16384,
+        "residual_bytes": 8192,
+        "bias_bytes": 8192,
+        "bytes": 90232320,
+        "flops_per_byte": 0.9993928561295997
+      },
+      "custom_ffn": {
+        "flops": 270587648,
+        "bytes": 270661632,
+        "weight_bytes": 270532608,
+        "flops_per_byte": 0.9997266550140361
+      },
+      "library_extra_bytes_vs_fused": 192512,
+      "library_ffn_bytes_estimate": 270854144,
+      "single_layer_working_set_bytes": 270697472,
+      "bandwidth_lower_bounds_us": [
+        {
+          "bandwidth_id": "nvidia-laptop-5060-published",
+          "bandwidth_label": "384 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 234.97333333333333,
+          "custom_ffn_us_if_100pct_peak": 704.848,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        },
+        {
+          "bandwidth_id": "partner-desktop-28gbps-derived",
+          "bandwidth_label": "448 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 201.40571428571428,
+          "custom_ffn_us_if_100pct_peak": 604.1554285714285,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        }
+      ]
+    },
+    {
+      "name": "decode-8b-shape",
+      "hidden": 4096,
+      "intermediate": 14336,
+      "note": "Llama-3-8B-class FFN shape. One layer, not the full 8B model.",
+      "projection": {
+        "flops": 117440512,
+        "weight_bytes": 117440512,
+        "input_bytes": 8192,
+        "output_bytes": 57344,
+        "bytes": 117506048,
+        "flops_per_byte": 0.9994422755158952
+      },
+      "fused_gate": {
+        "flops": 234952704,
+        "weight_bytes": 234881024,
+        "input_bytes": 8192,
+        "output_bytes": 28672,
+        "bias_bytes": 57344,
+        "epilogue_flops": 71680,
+        "bytes": 234975232,
+        "flops_per_byte": 0.999904126065508
+      },
+      "down_residual": {
+        "flops": 117440512,
+        "weight_bytes": 117440512,
+        "input_bytes": 28672,
+        "output_bytes": 16384,
+        "residual_bytes": 8192,
+        "bias_bytes": 8192,
+        "bytes": 117501952,
+        "flops_per_byte": 0.9994771150695437
+      },
+      "custom_ffn": {
+        "flops": 352393216,
+        "bytes": 352477184,
+        "weight_bytes": 352321536,
+        "flops_per_byte": 0.9997617774885537
+      },
+      "library_extra_bytes_vs_fused": 245760,
+      "library_ffn_bytes_estimate": 352722944,
+      "single_layer_working_set_bytes": 352526336,
+      "bandwidth_lower_bounds_us": [
+        {
+          "bandwidth_id": "nvidia-laptop-5060-published",
+          "bandwidth_label": "384 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 306.00533333333334,
+          "custom_ffn_us_if_100pct_peak": 917.9093333333333,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        },
+        {
+          "bandwidth_id": "partner-desktop-28gbps-derived",
+          "bandwidth_label": "448 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 262.2902857142857,
+          "custom_ffn_us_if_100pct_peak": 786.7794285714286,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        }
+      ]
+    },
+    {
+      "name": "smoke",
+      "hidden": 512,
+      "intermediate": 1024,
+      "note": "Smoke shape. Launch overhead is a larger fraction of runtime.",
+      "projection": {
+        "flops": 1048576,
+        "weight_bytes": 1048576,
+        "input_bytes": 1024,
+        "output_bytes": 4096,
+        "bytes": 1053696,
+        "flops_per_byte": 0.9951409135082604
+      },
+      "fused_gate": {
+        "flops": 2102272,
+        "weight_bytes": 2097152,
+        "input_bytes": 1024,
+        "output_bytes": 2048,
+        "bias_bytes": 4096,
+        "epilogue_flops": 5120,
+        "bytes": 2104320,
+        "flops_per_byte": 0.9990267639902677
+      },
+      "down_residual": {
+        "flops": 1048576,
+        "weight_bytes": 1048576,
+        "input_bytes": 2048,
+        "output_bytes": 2048,
+        "residual_bytes": 1024,
+        "bias_bytes": 1024,
+        "bytes": 1054720,
+        "flops_per_byte": 0.9941747572815534
+      },
+      "custom_ffn": {
+        "flops": 3150848,
+        "bytes": 3159040,
+        "weight_bytes": 3145728,
+        "flops_per_byte": 0.9974068071312804
+      },
+      "library_extra_bytes_vs_fused": 18432,
+      "library_ffn_bytes_estimate": 3177472,
+      "single_layer_working_set_bytes": 3162112,
+      "bandwidth_lower_bounds_us": [
+        {
+          "bandwidth_id": "nvidia-laptop-5060-published",
+          "bandwidth_label": "384 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 2.7439999999999998,
+          "custom_ffn_us_if_100pct_peak": 8.226666666666667,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        },
+        {
+          "bandwidth_id": "partner-desktop-28gbps-derived",
+          "bandwidth_label": "448 GB/s",
+          "kind": "analytical-lower-bound-not-a-prediction",
+          "projection_us_if_100pct_peak": 2.3520000000000003,
+          "custom_ffn_us_if_100pct_peak": 7.051428571428571,
+          "assumption": "100% of named peak bandwidth, one streaming pass, no launch cost"
+        }
+      ]
+    }
+  ],
+  "bandwidths": [
+    {
+      "id": "nvidia-laptop-5060-published",
+      "bytes_per_sec": 384000000000,
+      "label": "384 GB/s",
+      "kind": "nvidia-published-laptop",
+      "source": "https://www.nvidia.com/en-us/geforce/laptops/50-series/"
+    },
+    {
+      "id": "partner-desktop-28gbps-derived",
+      "bytes_per_sec": 448000000000,
+      "label": "448 GB/s",
+      "kind": "derived-from-partner-rate-and-nvidia-bus",
+      "source": "ASUS TUF RTX 5060 28 Gbps * NVIDIA 128-bit interface / 8"
+    }
+  ]
+}

@@ -4,6 +4,8 @@ I want to make one small part of LLM inference faster: the feed-forward layers w
 
 There is **no measured GPU win in this repository yet**. The code was written on a Mac without an NVIDIA GPU or `nvcc`, and the attempted Modal run could not connect. GitHub CI was blocked before execution by an account billing lock. I would rather leave the benchmark cells empty than pretend a speedup happened. The [validation log](results/STATUS.md) records what actually ran.
 
+An RTX 5060 write-up is in [docs/rtx-5060.md](docs/rtx-5060.md). It assumes a **desktop** GeForce RTX 5060 because the repo does not name a variant. Those figures are analytical bounds and ESTIMATES, not 5060 benchmark results. The laptop 5060 is a different GPU (3328 CUDA cores, 384 GB/s published bandwidth). The protocol for a real run is [docs/benchmark.md](docs/benchmark.md).
+
 ## What is implemented
 
 The workload is a SwiGLU feed-forward layer:
@@ -36,9 +38,12 @@ Current results:
 | Comparison | Workload | GPU latency | Speedup |
 |---|---|---:|---:|
 | Custom vs cuBLAS GemmEx | 2048 → 8192 projection and SwiGLU layer | unmeasured | unmeasured |
+| Custom vs cuBLAS GemmEx | 2048 → 5632 TinyLlama MLP shape | unmeasured | unmeasured |
 | Custom vs cuBLAS GemmEx | 4096 → 11008 projection and SwiGLU layer | unmeasured | unmeasured |
 | Custom vs cuBLAS GemmEx | 4096 → 14336 projection and SwiGLU layer | unmeasured | unmeasured |
 | Custom vs stock PyTorch | TinyLlama, batch one, 32 decode tokens, three prompts | unmeasured | unmeasured |
+
+Do not fill those cells from [docs/rtx-5060-bounds.md](docs/rtx-5060-bounds.md). Those microseconds are 100% peak-bandwidth floors, not measured 5060 times.
 
 The shape suite uses seeded synthetic tensors. Those rows exercise model-sized operations; they are not pretrained-model results. The separate TinyLlama runner uses downloaded pretrained weights and actual token decoding, records the resolved model revision, and checks the entire model output.
 
@@ -52,10 +57,11 @@ The cuBLAS baseline is GemmEx with default and tensor-op algorithms. A win there
 
 ## Run on an NVIDIA machine
 
-You need a C++17 compiler, CMake 3.24+, and CUDA 12+. The host-only checks also run on macOS:
+You need a C++17 compiler, CMake 3.24+, and CUDA 12+. Native GeForce RTX 50-series cubin (`sm_120`) needs CUDA 12.8+. The host-only checks also run on macOS:
 
 ```sh
 make host-test
+python3 tools/run_bench.py --probe-only
 ```
 
 Build and run the CUDA correctness suite and comparison:
@@ -66,12 +72,23 @@ make bench
 # Readable comparison: results/kernels.md
 ```
 
+The probe-and-run helper records `nvidia-smi` metadata, builds, runs correctness/smoke/tinyllama/decode, and (with `--include-transfers`) H2D/D2H around the kernels. It skips CUDA execution when this machine has no GPU or `nvcc`:
+
+```sh
+python3 tools/run_bench.py --arch 120          # desktop/laptop RTX 50-series
+python3 tools/run_bench.py --arch 120 --model  # also TinyLlama; downloads weights
+```
+
 Set architectures explicitly if you are building for another machine:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=89
 cmake --build build -j2
 ctest --test-dir build --output-on-failure
+# Blackwell native cubin (CUDA 12.8+):
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=120
+# CUDA 12.6/12.7 forward-compat PTX that a 5060 driver may JIT:
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CUDA_ARCHITECTURES=75;80;86;89;90;90-virtual'
 ```
 
 For the actual model, use Python 3.11 and a CUDA 12.6 toolkit. Install the matching CUDA PyTorch wheel first:
@@ -98,6 +115,7 @@ For a quick GPU smoke check:
 
 ```sh
 ./build/decode_bench --suite smoke --repeats 20 --samples 3
+./build/decode_bench --suite tinyllama --include-transfers --output results/tinyllama.json
 ```
 
 ## Run on Modal
@@ -139,6 +157,9 @@ All tensors for the chosen layer must be in the supplied shard. Convert BF16 wei
 - [`src/torch_extension.cu`](src/torch_extension.cu): checked PyTorch binding on the current CUDA stream.
 - [`tools/model_bench.py`](tools/model_bench.py): full-model substitution, correctness gates, and latency measurements.
 - [`tools/report.py`](tools/report.py) and [`tools/model_report.py`](tools/model_report.py): evidence validation and readable reports.
+- [`tools/run_bench.py`](tools/run_bench.py): environment probe plus GPU suites when hardware exists.
+- [`tools/intensity.py`](tools/intensity.py): byte/FLOP tables and DRAM lower bounds. Not a benchmark.
+- [`docs/rtx-5060.md`](docs/rtx-5060.md) and [`docs/benchmark.md`](docs/benchmark.md): 5060 assessment and timing protocol.
 
 For a broader sweep and device validation:
 
