@@ -63,6 +63,25 @@ class ReportTest(unittest.TestCase):
         data["cases"][0]["custom"]["samples_us"] = [4, 5, 12]
         self.assertNotIn("| separated win |", report.render(data))
 
+    def test_transfer_inclusive_table(self):
+        data = fixture()
+        data["cases"][0]["transfer_inclusive"] = {
+            "custom": {"samples_us": [7, 8, 9], "median_us": 8},
+            "baseline": {"samples_us": [11, 12, 13], "median_us": 12},
+        }
+        text = report.render(data)
+        self.assertIn("Transfer-inclusive", text)
+        self.assertIn("| fixture | projection | 8.000 | 12.000 |", text)
+
+    def test_transfer_median_mismatch(self):
+        data = fixture()
+        data["cases"][0]["transfer_inclusive"] = {
+            "custom": {"samples_us": [7, 8, 9], "median_us": 99},
+            "baseline": {"samples_us": [11, 12, 13], "median_us": 12},
+        }
+        with self.assertRaises(ValueError):
+            report.validate(data)
+
 
 if __name__ == "__main__":
     unittest.main()

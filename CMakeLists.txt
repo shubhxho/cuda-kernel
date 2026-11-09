@@ -15,6 +15,8 @@ add_test(NAME launch_mapping COMMAND mapping_tests)
 if(ENABLE_CUDA)
   enable_language(CUDA)
   find_package(CUDAToolkit 12.0 REQUIRED)
+  # Native GeForce RTX 50-series cubin is sm_120 and needs CUDA 12.8+.
+  # CUDA 12.6 can emit 90-virtual PTX that the driver may JIT on Blackwell.
   add_executable(decode_bench src/benchmark.cu)
   target_include_directories(decode_bench PRIVATE include)
   target_link_libraries(decode_bench PRIVATE CUDA::cudart CUDA::cublas)

@@ -14,7 +14,9 @@ inline std::vector<Shape> shapes(const std::string& suite) {
     if (suite == "decode") return {{"decode-1b-shape", 2048, 8192},
         {"decode-7b-shape", 4096, 11008}, {"decode-8b-shape", 4096, 14336}};
     if (suite == "smoke") return {{"smoke", 512, 1024}};
-    throw std::invalid_argument("suite must be correctness, smoke, or decode");
+    // TinyLlama-1.1B-Chat-v1.0 MLP dims; not the rounder decode-1b-shape.
+    if (suite == "tinyllama") return {{"tinyllama-1.1b", 2048, 5632}};
+    throw std::invalid_argument("suite must be correctness, smoke, decode, or tinyllama");
 }
 inline double silu(double x) { if(x>=0) return x/(1.0+std::exp(-x)); double e=std::exp(x); return x*e/(1.0+e); }
 // Double reference, independent of CUDA reduction order and cuBLAS.
